@@ -144,13 +144,21 @@ public class WebSecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        // Add both origins to a single list instead of overriding
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000", "http://10.68.25.118:3000"));
+
+        // 배포된 백엔드 URL도 추가
+        configuration.setAllowedOrigins(Arrays.asList(
+                "http://localhost:3000",
+                "http://10.68.25.118:3000",
+                "https://ytterbic-cathryn-65cakes-bcf32d4a.koyeb.app",  // 백엔드 URL
+                "https://iimt-4601-cyan.vercel.app",  // 실제 프론트엔드 배포 URL (수정됨)
+                "iimt-4601-pr3ejvjme-klarra247s-projects.vercel.app"  // 기존 URL
+        ));
+
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setExposedHeaders(Arrays.asList("Authorization", "Content-Type"));
         configuration.setAllowCredentials(true);
-        configuration.setMaxAge(3600L); // 1 hour
+        configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
