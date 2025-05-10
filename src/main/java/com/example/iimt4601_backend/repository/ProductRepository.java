@@ -106,19 +106,17 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     Long countProductsAddedBetween(@Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
 
     // 가장 많이 팔린 제품 목록 조회
-    @Query(value = "SELECT p.id, p.name, SUM(oi.quantity) as total_sold " +
-            "FROM products p " +
-            "JOIN order_items oi ON p.id = oi.product_id " +
-            "JOIN orders o ON oi.order_id = o.id " +
-            "WHERE o.created_at BETWEEN :startDate AND :endDate " +
-            "GROUP BY p.id, p.name " +
-            "ORDER BY total_sold DESC " +
-            "LIMIT :limit", nativeQuery = true)
+    // ProductRepository.java
+    @Query("SELECT p.id, p.productName, SUM(oi.quantity) as totalSold " +
+            "FROM Product p " +
+            "JOIN OrderItem oi ON oi.product = p " +
+            "JOIN Order o ON oi.order = o " +
+            "WHERE o.createdAt BETWEEN :startDate AND :endDate " +
+            "GROUP BY p.id, p.productName " +
+            "ORDER BY totalSold DESC")
     List<Object[]> findBestSellingProducts(
             @Param("startDate") LocalDateTime startDate,
-            @Param("endDate") LocalDateTime endDate,
-            @Param("limit") int limit);
-
+            @Param("endDate") LocalDateTime endDate);
 
 
     @Query(value = "SELECT p FROM Product p WHERE p.id != :productId ORDER BY FUNCTION('RAND') LIMIT 4", nativeQuery = true)

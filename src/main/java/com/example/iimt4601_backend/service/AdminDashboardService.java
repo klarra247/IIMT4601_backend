@@ -315,8 +315,9 @@ public class AdminDashboardService {
 
     private List<TopProductDto> getTopProducts(LocalDateTime startDateTime, LocalDateTime endDateTime, int limit) {
         try {
-            List<Object[]> products = productRepository.findBestSellingProducts(startDateTime, endDateTime, limit);
+            List<Object[]> products = productRepository.findBestSellingProducts(startDateTime, endDateTime);
             return products.stream()
+                    .limit(limit)
                     .map(product -> {
                         try {
                             Long id = product[0] != null ? ((Number) product[0]).longValue() : 0L;

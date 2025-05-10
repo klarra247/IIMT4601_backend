@@ -93,6 +93,7 @@ public class AdminReviewService {
                 .id(review.getId())
                 .productId(review.getProduct().getId())
                 .productName(review.getProduct().getProductName())
+                .productImage(review.getProduct().getThumbnail())
                 .userId(review.getUser().getId())
                 .username(review.getUser().getUserName())
                 .rating(review.getRating())
