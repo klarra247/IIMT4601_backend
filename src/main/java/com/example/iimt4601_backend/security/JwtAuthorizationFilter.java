@@ -38,6 +38,21 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest req, HttpServletResponse res, FilterChain filterChain)
             throws ServletException, IOException {
+        log.debug("=== JWT Authorization Filter 시작 ===");
+        log.debug("Request URL: {}", req.getRequestURL());
+        log.debug("X-Forwarded-Proto: {}", req.getHeader("X-Forwarded-Proto"));
+        log.debug("isSecure(): {}", req.isSecure());
+
+        // 쿠키 디버깅
+        Cookie[] cookies = req.getCookies();
+        if (cookies != null) {
+            for (Cookie cookie : cookies) {
+                log.debug("Cookie: {} = {}", cookie.getName(),
+                        cookie.getValue().substring(0, Math.min(cookie.getValue().length(), 10)) + "...");
+            }
+        } else {
+            log.debug("No cookies found");
+        }
 
         // 쿠키에서 토큰 가져오기
         String accessToken = jwtUtil.getTokenFromCookie(req, "accessToken");
@@ -70,47 +85,40 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
     private boolean handleRefreshToken(HttpServletRequest req, HttpServletResponse res, String refreshToken)
             throws ServletException, IOException {
         if (!StringUtils.hasText(refreshToken)) {
-            // Refresh Token이 없으면 인증 실패
             res.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             return false;
         }
 
         try {
-            // Refresh Token에서 사용자 정보 추출
             Claims refreshTokenInfo = jwtUtil.getUserInfoFromToken(refreshToken);
             String username = refreshTokenInfo.getSubject();
             String currentUserAgent = req.getHeader("User-Agent");
 
-            // Refresh Token과 User-Agent가 유효한지 확인
             if (!refreshTokenService.isValidTokenForUserAgent(username, refreshToken, currentUserAgent)) {
                 res.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 return false;
             }
 
-            // Refresh Token이 데이터베이스에 유효한지 확인
             if (refreshTokenService.isValidToken(username, refreshToken)) {
-                // 유효하다면 새로운 Access Token을 발급
                 UserRoleEnum role = UserRoleEnum.valueOf(
                         refreshTokenInfo.get(JwtUtil.AUTHORIZATION_KEY, String.class)
                 );
                 setAuthentication(username);
 
-                // 새 Access Token 발급 및 쿠키 설정
+                // 새 Access Token 발급
                 String newAccessToken = jwtUtil.createAccessToken(username, role);
 
-                Cookie accessTokenCookie = new Cookie("accessToken", newAccessToken);
-                accessTokenCookie.setHttpOnly(true);
-                accessTokenCookie.setSecure(req.isSecure());
-                accessTokenCookie.setPath("/");
-                accessTokenCookie.setMaxAge((int) (jwtUtil.getAccessTokenExpiration() / 1000));
-                res.addCookie(accessTokenCookie);
+                // 환경별 SameSite 정책 결정
+                boolean isSecure = req.isSecure() || "https".equals(req.getHeader("X-Forwarded-Proto"));
+                String sameSitePolicy = isSecure ? "None" : "Lax";
 
-                // SameSite 설정 추가
-                String sameSitePolicy = "Lax";
-                res.setHeader("Set-Cookie", accessTokenCookie.getName() + "=" + accessTokenCookie.getValue()
-                        + "; HttpOnly; SameSite=" + sameSitePolicy + "; Path=/; Max-Age=" + accessTokenCookie.getMaxAge()
-                        + (req.isSecure() ? "; Secure" : ""));
+                // 새로운 Access Token 쿠키 설정
+                String accessTokenHeader = String.format("%s=%s; HttpOnly; SameSite=%s; Path=/; Max-Age=%d%s",
+                        "accessToken", newAccessToken,
+                        sameSitePolicy, (jwtUtil.getAccessTokenExpiration() / 1000),
+                        isSecure ? "; Secure" : "");
 
+                res.setHeader("Set-Cookie", accessTokenHeader);
                 return true;
             }
         } catch (Exception e) {

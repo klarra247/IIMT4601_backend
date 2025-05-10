@@ -79,7 +79,7 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
             // Access Token을 HttpOnly 쿠키로 설정
             Cookie accessTokenCookie = new Cookie("accessToken", accessToken);
             accessTokenCookie.setHttpOnly(true);
-            accessTokenCookie.setSecure(request.isSecure()); // HTTPS인 경우만 Secure 설정
+            accessTokenCookie.setSecure(true); // HTTPS인 경우만 Secure 설정
             accessTokenCookie.setPath("/");
             accessTokenCookie.setMaxAge((int) (jwtUtil.getAccessTokenExpiration() / 1000)); // 초 단위로 변환
             response.addCookie(accessTokenCookie);
@@ -92,11 +92,25 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
             refreshTokenCookie.setMaxAge((int) (jwtUtil.getRefreshTokenExpiration() / 1000));
             response.addCookie(refreshTokenCookie);
 
-            // SameSite 설정 추가 (브라우저 CSRF 공격 방지)
-            String sameSitePolicy = "Lax"; // 또는 "Strict" (더 보안적이지만 사용성 제한)
-            response.setHeader("Set-Cookie", accessTokenCookie.getName() + "=" + accessTokenCookie.getValue()
-                    + "; HttpOnly; SameSite=" + sameSitePolicy + "; Path=/; Max-Age=" + accessTokenCookie.getMaxAge()
-                    + (request.isSecure() ? "; Secure" : ""));
+            // 환경별 SameSite 정책 결정
+            boolean isSecure = request.isSecure() || "https".equals(request.getHeader("X-Forwarded-Proto"));
+            String sameSitePolicy = isSecure ? "None" : "Lax";
+
+            // Access Token 쿠키 설정
+            String accessTokenHeader = String.format("%s=%s; HttpOnly; SameSite=%s; Path=/; Max-Age=%d%s",
+                    "accessToken", accessToken,
+                    sameSitePolicy, (jwtUtil.getAccessTokenExpiration() / 1000),
+                    isSecure ? "; Secure" : "");
+
+            // Refresh Token 쿠키 설정
+            String refreshTokenHeader = String.format("%s=%s; HttpOnly; SameSite=%s; Path=/; Max-Age=%d%s",
+                    "refreshToken", refreshToken,
+                    sameSitePolicy, (jwtUtil.getRefreshTokenExpiration() / 1000),
+                    isSecure ? "; Secure" : "");
+
+            // Set-Cookie 헤더로 설정 (addCookie 대신 사용)
+            response.setHeader("Set-Cookie", accessTokenHeader);
+            response.addHeader("Set-Cookie", refreshTokenHeader);
 
 
             UserResponseDto userResponseDto = new UserResponseDto();

@@ -121,20 +121,23 @@ public class JwtUtil {
         }
     }
 
-    // 로그아웃 시 쿠키 삭제 메소드
-    public void addClearCookies(HttpServletResponse response) {
+    public void addClearCookies(HttpServletResponse response, HttpServletRequest request) {
+        // 환경별 SameSite 정책 결정
+        boolean isSecure = request.isSecure() || "https".equals(request.getHeader("X-Forwarded-Proto"));
+        String sameSitePolicy = isSecure ? "None" : "Lax";
+
         // Access Token 쿠키 삭제
-        Cookie accessTokenCookie = new Cookie("accessToken", null);
-        accessTokenCookie.setMaxAge(0);
-        accessTokenCookie.setPath("/");
-        response.addCookie(accessTokenCookie);
+        String accessTokenHeader = String.format("%s=; HttpOnly; SameSite=%s; Path=/; Max-Age=0%s",
+                "accessToken", sameSitePolicy, isSecure ? "; Secure" : "");
 
         // Refresh Token 쿠키 삭제
-        Cookie refreshTokenCookie = new Cookie("refreshToken", null);
-        refreshTokenCookie.setMaxAge(0);
-        refreshTokenCookie.setPath("/");
-        response.addCookie(refreshTokenCookie);
+        String refreshTokenHeader = String.format("%s=; HttpOnly; SameSite=%s; Path=/; Max-Age=0%s",
+                "refreshToken", sameSitePolicy, isSecure ? "; Secure" : "");
+
+        response.setHeader("Set-Cookie", accessTokenHeader);
+        response.addHeader("Set-Cookie", refreshTokenHeader);
     }
+
     // 요청에서 JWT 토큰을 추출하는 메소드
     public String getTokenFromRequest(HttpServletRequest req, String tokenType) {
         String bearerToken = req.getHeader(AUTHORIZATION_HEADER);
