@@ -105,6 +105,7 @@ public class WebSecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/questions/**").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/carts/**").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/orders/**").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/wishlist/**").authenticated()
 
                         .requestMatchers(HttpMethod.GET, "/api/gallery-items").permitAll()
 
