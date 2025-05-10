@@ -52,6 +52,10 @@ public class UserService {
                 requestDto.getBirthDay()
         );
 
+        UserRoleEnum role = UserRoleEnum.USER;
+        if (requestDto.getRole() != null) {
+            role = requestDto.getRole();
+        }
         // 아이디 중복 확인
         if (userRepository.existsByUserName(userName)) {
             throw new DuplicateUsernameException("이미 존재하는 아이디입니다.");
@@ -69,7 +73,7 @@ public class UserService {
                     .name(name)
                     .phoneNumber(phoneNumber)
                     .shippingAddress(shippingAddress)
-                    .role(UserRoleEnum.USER)
+                    .role(role)
                     .isSex(isSex)
                     .birthDate(birthDate)
                     .isActive(true)

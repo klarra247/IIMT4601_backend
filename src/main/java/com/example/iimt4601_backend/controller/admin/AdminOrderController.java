@@ -17,7 +17,7 @@ import java.time.LocalDate;
 @RestController
 @RequestMapping("/api/admin/orders")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('ADMIN')")
+//@PreAuthorize("hasRole('ADMIN')")
 public class AdminOrderController {
 
     private final AdminOrderService orderService;

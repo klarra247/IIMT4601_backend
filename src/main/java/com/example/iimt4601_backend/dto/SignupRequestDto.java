@@ -36,4 +36,6 @@ public class SignupRequestDto {
 
     private Integer birthDay;
 
+    private UserRoleEnum role;
+
 }

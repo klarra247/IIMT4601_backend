@@ -108,8 +108,8 @@ public class WebSecurityConfig {
 
                         .requestMatchers(HttpMethod.GET, "/api/gallery-items").permitAll()
 
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
-//                        .requestMatchers("/api/admin/**").permitAll()
+//                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/api/admin/**").permitAll()
 //                        .requestMatchers("/api/**").permitAll()
 
                         .anyRequest().authenticated() // 그 외 모든 요청 인증처리
